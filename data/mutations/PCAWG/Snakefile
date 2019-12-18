@@ -22,7 +22,7 @@ COSMIC_DIR = 'COSMIC'
 TOMKOVA_DIR = 'Tomkova2018'
 RAW_DIR = 'raw'
 
-MUTATION_URL="https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/PCAWG/processed/extended/extended.PCAWG-{cancertype}-{project}_{cancertype}_{provenance}_WGS.SBS.tsv"
+MUTATION_URL="https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/PCAWG/processed/extended/extended.PCAWG-{cancertype}-{project}_{cancertype}_{provenance}.WGS.SBS.tsv"
 
 # Files
 COSMIC_SIGNATURES = join(COSMIC_DIR, 'cosmic-signatures.tsv')

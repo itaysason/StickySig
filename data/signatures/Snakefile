@@ -28,7 +28,7 @@ rule all:
 
 rule download_cosmic_signatures:
     params:
-        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/COSMIC/processed/cosmic-signatures.SBS-96.tsv'
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/COSMIC/processed/COSMIC-signatures.SBS-96.tsv'
     output:
         COSMIC_SIGNATURES
     shell:
@@ -36,7 +36,7 @@ rule download_cosmic_signatures:
 
 rule download_pcawg_signatures:
     params:
-        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/PCAWG/processed/sigProfiler-signatures.SBS-96.tsv'
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/PCAWG/processed/SigProfiler-signatures.SBS-96.tsv'
     output:
         PCAWG_SIGNATURES
     shell:

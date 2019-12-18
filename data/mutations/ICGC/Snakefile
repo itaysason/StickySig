@@ -93,7 +93,7 @@ rule convert_patient_names:
 # Download mutations and sample mapping
 rule download_icgc_r22_brca_mutations:
     params:
-        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/ICGC/processed/extended/extended.ICGC-BRCA-EU.RELEASE_22.SBS.tsv'
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/ICGC/processed/extended/extended.ICGC-BRCA-EU_BRCA_22.WGS.SBS.tsv'
     output:
         ICGC_R22_BRCA_MUTATIONS
     shell:
