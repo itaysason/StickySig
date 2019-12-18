@@ -1,0 +1,108 @@
+################################################################################
+# SETUP
+################################################################################
+# Modules
+from os.path import join
+
+# Configuration
+configfile: 'config.yml'
+subworkflow signaturesworkflow:
+    workdir: "../../signatures"
+
+subworkflow strandworkflow:
+    workdir: "../../strand"
+
+# Directories
+SRC_DIR = '../../../src'
+COSMIC_DIR = 'COSMIC'
+MUTATIONS_DIR = 'BRCA-EU'
+TOMKOVA_DIR = 'Tomkova2018'
+
+RAW_MUTATIONS_DIR = join(MUTATIONS_DIR, 'raw')
+
+# Files
+COSMIC_SIGNATURES = join(COSMIC_DIR, 'cosmic-signatures.tsv')
+TOMKOVA_STRAND_ANNOTATIONS = join(TOMKOVA_DIR, 'tableTerritories_Haradhvala_territories_50_bins.txt')
+
+ICGC_R22_BRCA_MUTATIONS = join(RAW_MUTATIONS_DIR, 'ICGC-BRCA-EU.RELEASE_22.SBS.tsv')
+ICGC_R22_BRCA_MUTATIONS_RENAMED = join(RAW_MUTATIONS_DIR, 'ICGC-BRCA-EU.RELEASE_22.SBS.renamed.tsv')
+ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND = join(RAW_MUTATIONS_DIR, 'ICGC-BRCA-EU.RELEASE_22.SBS.renamed.strand.tsv')
+ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND_KATAEGIS = join(RAW_MUTATIONS_DIR, 'ICGC-BRCA-EU.RELEASE_22.SBS.renamed.strand.kataegis.tsv')
+ICGC_R22_BRCA_MUTATIONS_JSON = join(MUTATIONS_DIR, 'ICGC-BRCA-EU.RELEASE_22.SBS.renamed.strand.kataegis.smm.json')
+ICGC_R22_BRCA_SAMPLE_FILE = join(RAW_MUTATIONS_DIR, 'sample.r22.BRCA-EU.tsv')
+
+# Scripts
+PROCESS_MUTATIONS_FOR_SMMM_PY = join(SRC_DIR, 'process_mutations_for_smmm.py')
+CONVERT_PATIENT_NAMES_PY = join(SRC_DIR, 'convert_patient_names.py')
+ADD_STRAND_ANNOTATIONS_PY = join(SRC_DIR, 'add_strand_annotations.py')
+ADD_KATAEGIS_ANNOTATIONS_PY = join(SRC_DIR, 'add_kataegis_annotations.py')
+
+################################################################################
+# RULES
+################################################################################
+# General
+rule all:
+    input:
+        ICGC_R22_BRCA_MUTATIONS_JSON
+
+# Download processed ICGC BRCA (release 22) BRCA mutations, convert into JSON
+# format
+rule convert_mutations_to_json:
+    input:
+        mutations=ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND_KATAEGIS,
+        signatures=signaturesworkflow(COSMIC_SIGNATURES)
+    output:
+        ICGC_R22_BRCA_MUTATIONS_JSON
+    shell:
+        'python {PROCESS_MUTATIONS_FOR_SMMM_PY} -mf {input.mutations} '\
+        '-sf {input.signatures} -o {output}'
+
+# Annotate with strand and kataegis information
+rule annotate_with_kataegis:
+    input:
+        mutations=ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND
+    params:
+        n_cores=config.get('n_cores')
+    threads: config.get('n_cores')
+    output:
+        ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND_KATAEGIS
+    shell:
+        'python {ADD_KATAEGIS_ANNOTATIONS_PY} -mf {input.mutations} '\
+        '-of {output} -nc {params.n_cores}'
+        
+rule annotate_with_strand:
+    input:
+        mutations=ICGC_R22_BRCA_MUTATIONS_RENAMED,
+        strand_info=strandworkflow(TOMKOVA_STRAND_ANNOTATIONS)
+    output:
+        ICGC_R22_BRCA_MUTATIONS_RENAMED_W_STRAND
+    shell:
+        'python {ADD_STRAND_ANNOTATIONS_PY} -mf {input.mutations} '\
+        '-sf {input.strand_info} -of {output} '
+
+rule convert_patient_names:
+    input:
+        mutations=ICGC_R22_BRCA_MUTATIONS,
+        samples=ICGC_R22_BRCA_SAMPLE_FILE
+    output:
+        ICGC_R22_BRCA_MUTATIONS_RENAMED
+    shell:
+        'python {CONVERT_PATIENT_NAMES_PY} -mf {input.mutations} -sf {input.samples} '\
+        '-o {output}'
+
+# Download mutations and sample mapping
+rule download_icgc_r22_brca_mutations:
+    params:
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/ICGC/processed/extended/extended.ICGC-BRCA-EU.RELEASE_22.SBS.tsv'
+    output:
+        ICGC_R22_BRCA_MUTATIONS
+    shell:
+        'wget -O {output} {params.url}'
+
+rule download_sample_mapping:
+    params:
+        url='https://dcc.icgc.org/api/v1/download?fn=/release_22/Projects/BRCA-EU/sample.BRCA-EU.tsv.gz'
+    output:
+        ICGC_R22_BRCA_SAMPLE_FILE
+    shell:
+        'wget -O - {params.url} | gunzip -c > {output}'

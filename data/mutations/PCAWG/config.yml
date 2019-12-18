@@ -1,0 +1,13 @@
+cohorts:
+  - 'PCAWG-CLLE-ES'
+  - 'PCAWG-MALY-DE'
+  - 'PCAWG-COAD-US'
+cancertype:
+  - 'CLLE'
+  - 'MALY'
+  - 'COAD'
+provenance:
+  - '27'
+  - '27'
+  - '27'
+n_cores: 8

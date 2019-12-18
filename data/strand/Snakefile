@@ -1,0 +1,30 @@
+################################################################################
+# SETUP
+################################################################################
+# Modules
+from os.path import join
+
+# Configuration
+
+# Directories
+TOMKOVA_DIR = 'Tomkova2018'
+
+# Files
+TOMKOVA_STRAND_ANNOTATIONS = join(TOMKOVA_DIR, 'tableTerritories_Haradhvala_territories_50_bins.txt')
+
+################################################################################
+# RULES
+################################################################################
+rule all:
+    input:
+        TOMKOVA_STRAND_ANNOTATIONS
+
+rule download_tomkova2018_annotations:
+    params:
+        url='https://bitbucket.org/bsblabludwig/replicationasymmetry/raw/'\
+            'e89d5d83f08476ba620a10e9889ccc161d07cfde/data/'\
+            'tableTerritories_Haradhvala_territories_50_bins.txt'
+    output:
+        TOMKOVA_STRAND_ANNOTATIONS
+    shell:
+        'wget -O {output} {params.url}'

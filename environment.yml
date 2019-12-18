@@ -1,0 +1,10 @@
+name: smmm
+channels:
+  - bioconda
+dependencies:
+  - python>=3.6
+  - snakemake
+  - pandas
+  - pip
+  - pip:
+    - pomegranate

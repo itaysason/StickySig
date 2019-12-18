@@ -1,0 +1,90 @@
+################################################################################
+# SETUP
+################################################################################
+# Modules
+from os.path import join
+
+subworkflow signaturesworkflow:
+    workdir: "../../signatures"
+
+subworkflow strandworkflow:
+    workdir: "../../strand"
+
+# Configuration
+configfile: 'config.yml'
+projects = [ c.split('-')[-1] for c in config.get('cohorts') ]
+cancertype = config.get('cancertype')
+provenance = config.get('provenance')
+
+# Directories
+SRC_DIR = '../../../src'
+COSMIC_DIR = 'COSMIC'
+TOMKOVA_DIR = 'Tomkova2018'
+RAW_DIR = 'raw'
+
+MUTATION_URL="https://obj.umiacs.umd.edu/mutation-signature-explorer/mutations/PCAWG/processed/extended/extended.PCAWG-{cancertype}-{project}_{cancertype}_{provenance}_WGS.SBS.tsv"
+
+# Files
+COSMIC_SIGNATURES = join(COSMIC_DIR, 'cosmic-signatures.tsv')
+TOMKOVA_STRAND_ANNOTATIONS = join(TOMKOVA_DIR, 'tableTerritories_Haradhvala_territories_50_bins.txt')
+
+PCAWG_MUTATIONS = join(RAW_DIR, 'PCAWG-{cancertype}-{project}-R{provenance}.SBS.tsv')
+PCAWG_MUTATIONS_W_STRAND = '{cancertype}-{project}/PCAWG-{cancertype}-{project}-R{provenance}.SBS.strand.tsv'
+PCAWG_MUTATIONS_W_STRAND_KATAEGIS = '{cancertype}-{project}/PCAWG-{cancertype}-{project}-R{provenance}.SBS.strand.kataegis.tsv'
+PCAWG_MUTATIONS_JSON = '{cancertype}-{project}/PCAWG-{cancertype}-{project}-R{provenance}.SBS.strand.kataegis.smmm.json'
+
+# Scripts
+PROCESS_MUTATIONS_FOR_SMMM_PY = join(SRC_DIR, 'process_mutations_for_smmm.py')
+ADD_STRAND_ANNOTATIONS_PY = join(SRC_DIR, 'add_strand_annotations.py')
+ADD_KATAEGIS_ANNOTATIONS_PY = join(SRC_DIR, 'add_kataegis_annotations.py')
+
+################################################################################
+# RULES
+################################################################################
+# General
+rule all:
+    input:
+        expand(PCAWG_MUTATIONS_JSON, zip, project=projects, provenance=provenance, cancertype=cancertype)
+
+# convert into JSON format
+rule convert_mutations_to_json:
+    input:
+        mutations=PCAWG_MUTATIONS_W_STRAND_KATAEGIS,
+        signatures=signaturesworkflow(COSMIC_SIGNATURES)
+    output:
+        PCAWG_MUTATIONS_JSON
+    shell:
+        'python {PROCESS_MUTATIONS_FOR_SMMM_PY} -mf {input.mutations} '\
+        '-sf {input.signatures} -o {output}'
+
+# Annotate with strand information and kataegis
+rule annotate_with_kataegis:
+    input:
+        mutations=PCAWG_MUTATIONS_W_STRAND
+    params:
+        n_cores=config.get('n_cores')
+    threads: config.get('n_cores')
+    output:
+        PCAWG_MUTATIONS_W_STRAND_KATAEGIS
+    shell:
+        'python {ADD_KATAEGIS_ANNOTATIONS_PY} -mf {input.mutations} '\
+        '-of {output} -nc {params.n_cores}'
+        
+rule annotate_with_strand:
+    input:
+        mutations=PCAWG_MUTATIONS,
+        strand_info=strandworkflow(TOMKOVA_STRAND_ANNOTATIONS)
+    output:
+        PCAWG_MUTATIONS_W_STRAND
+    shell:
+        'python {ADD_STRAND_ANNOTATIONS_PY} -mf {input.mutations} '\
+        '-sf {input.strand_info} -of {output} '
+
+# Download raw mutation files
+rule download_pcawg_mutations:
+    params:
+        url=MUTATION_URL
+    output:
+        PCAWG_MUTATIONS
+    shell:
+        'wget -O {output} {params.url}'

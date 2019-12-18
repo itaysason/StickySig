@@ -1,0 +1,43 @@
+################################################################################
+# SETUP
+################################################################################
+# Modules
+from os.path import join
+
+# Configuration
+
+# Directories
+SRC_DIR = '../../src'
+COSMIC_DIR = 'COSMIC'
+PCAWG_DIR = 'PCAWG'
+
+# Files
+PCAWG_SIGNATURES = join(PCAWG_DIR, 'pcawg-signatures.tsv')
+COSMIC_SIGNATURES = join(COSMIC_DIR, 'cosmic-signatures.tsv')
+
+
+################################################################################
+# RULES
+################################################################################
+# General
+rule all:
+    input:
+        COSMIC_SIGNATURES,
+        PCAWG_SIGNATURES
+
+
+rule download_cosmic_signatures:
+    params:
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/COSMIC/processed/cosmic-signatures.SBS-96.tsv'
+    output:
+        COSMIC_SIGNATURES
+    shell:
+        'wget -O {output} {params.url}'
+
+rule download_pcawg_signatures:
+    params:
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/PCAWG/processed/sigProfiler-signatures.SBS-96.tsv'
+    output:
+        PCAWG_SIGNATURES
+    shell:
+        'wget -O {output} {params.url}'
